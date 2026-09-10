@@ -3,86 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خريطة مواقع شعاع - الإسكندرية (470 موقعاً)</title>
+    <title>خريطة مواقع الـ 470 - شعاع للخدمات العامة</title>
+    <!-- تضمين مكتبة Leaflet للخرائط -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; font-family: Tahoma, sans-serif; background-color: #f4f6f9; }
-        #header { background: #0f172a; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        #header h3 { margin: 0; font-size: 16px; }
-        .search-container { display: flex; gap: 5px; }
-        #search-box { padding: 8px 12px; width: 220px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; outline: none; }
-        #search-btn { padding: 8px 14px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; }
-        #search-btn:hover { background: #1d4ed8; }
-        #map { width: 100%; height: calc(100vh - 60px); }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', Tahoma, sans-serif;
+            background-color: #f4f6f9;
+        }
+        #header {
+            background: #1e293b;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        #header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .search-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        #searchInput {
+            padding: 8px 12px;
+            width: 250px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        #searchBtn {
+            padding: 8px 16px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        #searchBtn:hover {
+            background-color: #2563eb;
+        }
+        #map {
+            width: 100%;
+            height: calc(100vh - 70px);
+        }
+        /* تنسيق اسم الموقع الظاهر بجانب العلامة */
+        .map-label {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #94a3b8;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e293b;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
+
     <div id="header">
-        <h3>خريطة مواقع شعاع (الإسكندرية)</h3>
+        <h1>خريطة مواقع قراءة العدادات (470 موقعاً)</h1>
         <div class="search-container">
-            <input type="text" id="search-box" placeholder="ابحث برقم البرن أو الاسم..." onkeydown="if(event.key === 'Enter') searchLocation()">
-            <button id="search-btn" onclick="searchLocation()">بحث وإظهار</button>
+            <input type="text" id="searchInput" placeholder="اكتب اسم المكان أو رقم البرن للبحث..." />
+            <button id="searchBtn" onclick="searchLocation()">بحث والانتقال</button>
         </div>
     </div>
+
     <div id="map"></div>
 
+    <!-- مكتبة Leaflet الجغرافية -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // مصفوفة المواقع الكاملة (تم إدراج العينات، ويمكنك وضع بياناتك كاملة هنا)
-        const geojsonFeatureCollection = {"type": "FeatureCollection", "features": [
-            {"geometry": {"coordinates": [29.8791932, 31.2055334], "type": "Point"}, "properties": {"name": "برن305180"}, "type": "Feature"},
-            {"geometry": {"coordinates": [29.8075, 31.0057], "type": "Point"}, "properties": {"name": "برن 2009003206"}, "type": "Feature"},
-            {"geometry": {"coordinates": [29.8808136, 31.2030841], "type": "Point"}, "properties": {"name": "برن789434 برن174117"}, "type": "Feature"},
-            {"geometry": {"coordinates": [30.020885, 31.201625], "type": "Point"}, "properties": {"name": "برن783423"}, "type": "Feature"},
-            {"geometry": {"coordinates": [30.02247, 31.281781], "type": "Point"}, "properties": {"name": "برن2016021252"}, "type": "Feature"}
-        ]};
-
+        // تهيئة الخريطة وتمركزها المبدئي على الإسكندرية
         const map = L.map('map').setView([31.2001, 29.9187], 12);
 
+        // إضافة طبقة الخرائط الأساسية من OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         let markersLayer = L.layerGroup().addTo(map);
-        let markersMap = {}; // لحفظ ربط كل عنصر بالعلامة الخاصة به على الخريطة
+        let allMarkers = [];
 
-        function displayMarkers(features) {
-            markersLayer.clearLayers();
-            markersMap = {};
-            
-            features.forEach(feature => {
-                const coords = feature.geometry.coordinates; // [lng, lat]
-                const name = feature.properties.name || 'موقع بدون اسم';
-                const marker = L.marker([coords[1], coords[0]]);
+        // جلب ملف البيانات المصنفة JSON وعرض النقاط
+        fetch('الأماكن المصنَّفة.json')
+            .then(response => response.json())
+            .then(data => {
+                const features = data.features || [];
                 
-                marker.bindPopup(`<b>الاسم/البرن:</b> ${name}`);
-                markersLayer.addLayer(marker);
-                
-                // حفظ العلامة للوصول إليها عند البحث
-                markersMap[name.toLowerCase()] = { marker: marker, latlng: [coords[1], coords[0]] };
-            });
-        }
+                features.forEach(feature => {
+                    const coords = feature.geometry.coordinates; // [Longitude, Latitude]
+                    const name = feature.properties.name || "موقع بدون اسم";
+                    
+                    if (coords && coords.length >= 2) {
+                        const lng = coords[0];
+                        const lat = coords[1];
 
-        // عرض كل المواقع عند فتح الصفحة
-        displayMarkers(geojsonFeatureCollection.features);
+                        // إنشاء العلامة على الخريطة (Leaflet تأخذ [Lat, Lng])
+                        const marker = L.marker([lat, lng]);
 
-        // دالة البحث عند الضغط على الزر أو الضغط Enter
+                        // ربط اسم المكان ثابتاً بجانب العلامة (Permanent Tooltip)
+                        marker.bindTooltip(name, {
+                            permanent: true,
+                            direction: 'right',
+                            className: 'map-label'
+                        });
+
+                        // نافذة منبثقة تحتوي على اسم المكان ورابط خرائط جوجل المباشر
+                        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                        const popupContent = `
+                            <div style="text-align: right; font-family: Tahoma;">
+                                <strong>${name}</strong><br><br>
+                                <a href="${googleMapsUrl}" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">
+                                    📍 فتحه على خرائط جوجل
+                                </a>
+                            </div>
+                        `;
+                        marker.bindPopup(popupContent);
+
+                        // حفظ مرجع العلامة للبحث لاحقاً
+                        allMarkers.push({
+                            name: name.toLowerCase(),
+                            marker: marker,
+                            latlng: [lat, lng]
+                        });
+
+                        markersLayer.addLayer(marker);
+                    }
+                });
+            })
+            .catch(error => console.error('خطأ في تحميل ملف الأماكن:', error));
+
+        // وظيفة البحث والانتقال التلقائي للموقع
         function searchLocation() {
-            const query = document.getElementById('search-box').value.trim().toLowerCase();
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
             if (!query) return;
 
-            // البحث عن الموقع المطابق أو الذي يحتوي على النص المدخل
-            let foundKey = Object.keys(markersMap).find(k => k.includes(query));
-            
-            if (foundKey) {
-                const target = markersMap[foundKey];
-                map.setView(target.latlng, 17); // تقريب الخريطة للمكان بدقة عالية
-                target.marker.openPopup();    // فتح اسم الموقع تلقائياً
+            const found = allMarkers.find(item => item.name.includes(query));
+            if (found) {
+                map.setView(found.latlng, 17); // تكبير الخريطة على الموقع بدقة
+                found.marker.openPopup();    // فتح النافذة المنبثقة للموقع
             } else {
-                alert('لم يتم العثور على الموقع المطابق لهذا الرقم أو الاسم.');
+                alert("لم يتم العثور على المكان المطابق للبحث!");
             }
         }
+
+        // السماح بالبحث عن طريق الضغط على زر Enter من لوحة المفاتيح
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                searchLocation();
+            }
+        });
     </script>
 </body>
 </html>
