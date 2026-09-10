@@ -48,10 +48,20 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // 3. بيانات الخريطة (GeoJSON) التي قمنا بتجميعها
+        // 3. بيانات الخريطة (GeoJSON) الكاملة التي تم إرسالها
         var shoaaData = {
           "type": "FeatureCollection",
           "features": [
+            {
+              "geometry": {
+                "coordinates": [29.956896, 31.225742999999998],
+                "type": "Point"
+              },
+              "properties": {
+                "name": "برن 2023004267\n&برن59127149\n &برن 201801"
+              },
+              "type": "Feature"
+            },
             {
               "geometry": {
                 "coordinates": [29.956896, 31.225742999999998],
