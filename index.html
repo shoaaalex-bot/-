@@ -3,30 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خريطة مواقع شعاع - الإسكندرية</title>
+    <title>خريطة مواقع شعاع - الإسكندرية (470 موقعاً)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: Tahoma, sans-serif; background-color: #f4f6f9; }
         #header { background: #0f172a; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         #header h3 { margin: 0; font-size: 16px; }
-        #search-box { padding: 8px 12px; width: 240px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; outline: none; }
+        .search-container { display: flex; gap: 5px; }
+        #search-box { padding: 8px 12px; width: 220px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; outline: none; }
+        #search-btn { padding: 8px 14px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        #search-btn:hover { background: #1d4ed8; }
         #map { width: 100%; height: calc(100vh - 60px); }
     </style>
 </head>
 <body>
     <div id="header">
-        <h3>خريطة مواقع شعاع - الإسكندرية (470 موقعاً)</h3>
-        <input type="text" id="search-box" placeholder="ابحث برقم البرن أو الاسم..." onkeyup="filterLocations()">
+        <h3>خريطة مواقع شعاع (الإسكندرية)</h3>
+        <div class="search-container">
+            <input type="text" id="search-box" placeholder="ابحث برقم البرن أو الاسم..." onkeydown="if(event.key === 'Enter') searchLocation()">
+            <button id="search-btn" onclick="searchLocation()">بحث وإظهار</button>
+        </div>
     </div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // تضمين جميع المواقع الـ 470 مباشرة داخل الكود لتجنب أي أخطاء تحميل
+        // مصفوفة المواقع الكاملة (تم إدراج العينات، ويمكنك وضع بياناتك كاملة هنا)
         const geojsonFeatureCollection = {"type": "FeatureCollection", "features": [
             {"geometry": {"coordinates": [29.8791932, 31.2055334], "type": "Point"}, "properties": {"name": "برن305180"}, "type": "Feature"},
-            {"geometry": {"coordinates": [29.807499999999997, 31.005702999999997], "type": "Point"}, "properties": {"name": "برن 2009003206"}, "type": "Feature"},
-            {"geometry": {"coordinates": [29.8808136, 31.203084099999998], "type": "Point"}, "properties": {"name": "برن789434 برن174117"}, "type": "Feature"},
+            {"geometry": {"coordinates": [29.8075, 31.0057], "type": "Point"}, "properties": {"name": "برن 2009003206"}, "type": "Feature"},
+            {"geometry": {"coordinates": [29.8808136, 31.2030841], "type": "Point"}, "properties": {"name": "برن789434 برن174117"}, "type": "Feature"},
             {"geometry": {"coordinates": [30.020885, 31.201625], "type": "Point"}, "properties": {"name": "برن783423"}, "type": "Feature"},
             {"geometry": {"coordinates": [30.02247, 31.281781], "type": "Point"}, "properties": {"name": "برن2016021252"}, "type": "Feature"}
         ]};
@@ -39,27 +45,43 @@
         }).addTo(map);
 
         let markersLayer = L.layerGroup().addTo(map);
+        let markersMap = {}; // لحفظ ربط كل عنصر بالعلامة الخاصة به على الخريطة
 
         function displayMarkers(features) {
             markersLayer.clearLayers();
+            markersMap = {};
+            
             features.forEach(feature => {
                 const coords = feature.geometry.coordinates; // [lng, lat]
                 const name = feature.properties.name || 'موقع بدون اسم';
                 const marker = L.marker([coords[1], coords[0]]);
+                
                 marker.bindPopup(`<b>الاسم/البرن:</b> ${name}`);
                 markersLayer.addLayer(marker);
+                
+                // حفظ العلامة للوصول إليها عند البحث
+                markersMap[name.toLowerCase()] = { marker: marker, latlng: [coords[1], coords[0]] };
             });
         }
 
+        // عرض كل المواقع عند فتح الصفحة
         displayMarkers(geojsonFeatureCollection.features);
 
-        function filterLocations() {
-            const query = document.getElementById('search-box').value.toLowerCase();
-            const filtered = geojsonFeatureCollection.features.filter(f => {
-                const name = (f.properties.name || '').toLowerCase();
-                return name.includes(query);
-            });
-            displayMarkers(filtered);
+        // دالة البحث عند الضغط على الزر أو الضغط Enter
+        function searchLocation() {
+            const query = document.getElementById('search-box').value.trim().toLowerCase();
+            if (!query) return;
+
+            // البحث عن الموقع المطابق أو الذي يحتوي على النص المدخل
+            let foundKey = Object.keys(markersMap).find(k => k.includes(query));
+            
+            if (foundKey) {
+                const target = markersMap[foundKey];
+                map.setView(target.latlng, 17); // تقريب الخريطة للمكان بدقة عالية
+                target.marker.openPopup();    // فتح اسم الموقع تلقائياً
+            } else {
+                alert('لم يتم العثور على الموقع المطابق لهذا الرقم أو الاسم.');
+            }
         }
     </script>
 </body>
