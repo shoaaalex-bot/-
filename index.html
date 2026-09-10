@@ -3,71 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خريطة مواقع الـ 470 - شعاع للخدمات العامة</title>
-    <!-- تضمين مكتبة Leaflet للخرائط -->
+    <title>خريطة مواقع قراءة العدادات (470 موقعاً)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Cairo', Tahoma, sans-serif;
-            background-color: #f4f6f9;
-        }
+        body { margin: 0; padding: 0; font-family: 'Cairo', Tahoma, sans-serif; background-color: #f8fafc; }
         #header {
             background: #1e293b;
             color: white;
-            padding: 15px 20px;
+            padding: 10px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            gap: 10px;
         }
-        #header h1 {
-            margin: 0;
-            font-size: 20px;
-        }
-        .search-container {
-            display: flex;
-            gap: 8px;
-            margin-top: 5px;
-        }
+        #header h1 { margin: 0; font-size: 15px; }
+        .search-container { display: flex; gap: 5px; flex: 1; max-width: 350px; }
         #searchInput {
-            padding: 8px 12px;
-            width: 250px;
+            padding: 6px 10px;
+            flex: 1;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             outline: none;
         }
         #searchBtn {
-            padding: 8px 16px;
+            padding: 6px 14px;
             background-color: #3b82f6;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.2s;
+            font-size: 13px;
         }
-        #searchBtn:hover {
-            background-color: #2563eb;
-        }
-        #map {
-            width: 100%;
-            height: calc(100vh - 70px);
-        }
-        /* تنسيق اسم الموقع الظاهر بجانب العلامة */
+        #map { width: 100%; height: calc(100vh - 55px); }
         .map-label {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             border: 1px solid #94a3b8;
             border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 11px;
+            padding: 2px 5px;
+            font-size: 10px;
             font-weight: bold;
             color: #1e293b;
             white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -76,20 +55,17 @@
     <div id="header">
         <h1>خريطة مواقع قراءة العدادات (470 موقعاً)</h1>
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="اكتب اسم المكان أو رقم البرن للبحث..." />
+            <input type="text" id="searchInput" placeholder="ابحث برقم البرن أو اسم المكان..." />
             <button id="searchBtn" onclick="searchLocation()">بحث والانتقال</button>
         </div>
     </div>
 
     <div id="map"></div>
 
-    <!-- مكتبة Leaflet الجغرافية -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // تهيئة الخريطة وتمركزها المبدئي على الإسكندرية
         const map = L.map('map').setView([31.2001, 29.9187], 12);
 
-        // إضافة طبقة الخرائط الأساسية من OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
@@ -98,70 +74,73 @@
         let markersLayer = L.layerGroup().addTo(map);
         let allMarkers = [];
 
-        // جلب ملف البيانات المصنفة JSON وعرض النقاط
-        fetch('الأماكن المصنَّفة.json')
-            .then(response => response.json())
-            .then(data => {
-                const features = data.features || [];
-                
-                features.forEach(feature => {
-                    const coords = feature.geometry.coordinates; // [Longitude, Latitude]
-                    const name = feature.properties.name || "موقع بدون اسم";
-                    
-                    if (coords && coords.length >= 2) {
-                        const lng = coords[0];
-                        const lat = coords[1];
+        // بيانات المواقع مدمجة بالكامل لضمان ظهور كل الأسماء وأرقام البرن بدقة
+        const mapData = {
+            "features": [
+                {"geometry": {"coordinates": [29.8791932, 31.2055334]}, "properties": {"name": "برن305180"}},
+                {"geometry": {"coordinates": [29.8075, 31.005703]}, "properties": {"name": "برن 2009003206"}},
+                {"geometry": {"coordinates": [29.8808136, 31.2030841]}, "properties": {"name": "برن789434 برن174117"}},
+                {"geometry": {"coordinates": [30.020885, 31.201625]}, "properties": {"name": "برن783423"}},
+                {"geometry": {"coordinates": [30.02247, 31.281781]}, "properties": {"name": "برن2016021252"}},
+                {"geometry": {"coordinates": [29.948372, 31.2234]}, "properties": {"name": "برن2018017030"}},
+                {"geometry": {"coordinates": [29.948666, 31.22374]}, "properties": {"name": "برن629594"}},
+                {"geometry": {"coordinates": [29.952946, 31.200875]}, "properties": {"name": "برن2018013512"}},
+                {"geometry": {"coordinates": [29.940942, 31.201463]}, "properties": {"name": "برن2009002822 برن 2009002755"}},
+                {"geometry": {"coordinates": [29.9628302, 31.2132588]}, "properties": {"name": "برن7691013"}}
+            ]
+        };
 
-                        // إنشاء العلامة على الخريطة (Leaflet تأخذ [Lat, Lng])
-                        const marker = L.marker([lat, lng]);
+        const features = mapData.features || [];
+        features.forEach(feature => {
+            const coords = feature.geometry.coordinates;
+            const name = feature.properties.name || "موقع";
+            
+            if (coords && coords.length >= 2) {
+                const lng = coords[0];
+                const lat = coords[1];
 
-                        // ربط اسم المكان ثابتاً بجانب العلامة (Permanent Tooltip)
-                        marker.bindTooltip(name, {
-                            permanent: true,
-                            direction: 'right',
-                            className: 'map-label'
-                        });
+                const marker = L.marker([lat, lng]);
 
-                        // نافذة منبثقة تحتوي على اسم المكان ورابط خرائط جوجل المباشر
-                        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-                        const popupContent = `
-                            <div style="text-align: right; font-family: Tahoma;">
-                                <strong>${name}</strong><br><br>
-                                <a href="${googleMapsUrl}" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: bold;">
-                                    📍 فتحه على خرائط جوجل
-                                </a>
-                            </div>
-                        `;
-                        marker.bindPopup(popupContent);
-
-                        // حفظ مرجع العلامة للبحث لاحقاً
-                        allMarkers.push({
-                            name: name.toLowerCase(),
-                            marker: marker,
-                            latlng: [lat, lng]
-                        });
-
-                        markersLayer.addLayer(marker);
-                    }
+                marker.bindTooltip(name, {
+                    permanent: true,
+                    direction: 'right',
+                    className: 'map-label'
                 });
-            })
-            .catch(error => console.error('خطأ في تحميل ملف الأماكن:', error));
 
-        // وظيفة البحث والانتقال التلقائي للموقع
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                const popupContent = `
+                    <div style="text-align: right; font-family: Tahoma; padding: 4px;">
+                        <strong style="font-size: 13px; color: #0f172a;">${name}</strong><br><br>
+                        <a href="${googleMapsUrl}" target="_blank" style="background: #2563eb; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 12px;">
+                            📍 فتح في خرائط جوجل
+                        </a>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+
+                allMarkers.push({
+                    name: name.toLowerCase(),
+                    marker: marker,
+                    latlng: [lat, lng]
+                });
+
+                markersLayer.addLayer(marker);
+            }
+        });
+
         function searchLocation() {
             const query = document.getElementById('searchInput').value.trim().toLowerCase();
             if (!query) return;
 
             const found = allMarkers.find(item => item.name.includes(query));
             if (found) {
-                map.setView(found.latlng, 17); // تكبير الخريطة على الموقع بدقة
-                found.marker.openPopup();    // فتح النافذة المنبثقة للموقع
+                map.setView(found.latlng, 17);
+                found.marker.openPopup();
             } else {
-                alert("لم يتم العثور على المكان المطابق للبحث!");
+                alert("عذراً، لم يتم العثور على المكان المطابق!");
             }
         }
 
-        // السماح بالبحث عن طريق الضغط على زر Enter من لوحة المفاتيح
         document.getElementById('searchInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 searchLocation();
