@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خريطة مواقع شعاع - الإسكندرية</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: Tahoma, sans-serif; background-color: #f4f6f9; }
+        #header { background: #0f172a; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+        #search-box { padding: 8px 12px; width: 240px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; }
+        #map { width: 100%; height: calc(100vh - 60px); }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h3 style="margin:0;">خريطة مواقع شعاع (470 موقعاً)</h3>
+        <input type="text" id="search-box" placeholder="ابحث برقم البرن..." onkeyup="filterLoc()">
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([31.2001, 29.9187], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        let markersLayer = L.layerGroup().addTo(map);
+        
+        // جلب البيانات وعرضها مباشرة
+        fetch('الأماكن المصنَّفة.json')
+            .then(res => res.json())
+            .then(data => {
+                window.allFeatures = data.features;
+                showMarkers(window.allFeatures);
+            });
+
+        function showMarkers(features) {
+            markersLayer.clearLayers();
+            features.forEach(f => {
+                const c = f.geometry.coordinates;
+                L.marker([c[1], c[0]]).addTo(markersLayer).bindPopup(`<b>الاسم:</b> ${f.properties.name}`);
+            });
+        }
+
+        function filterLoc() {
+            const q = document.getElementById('search-box').value.toLowerCase();
+            const filtered = window.allFeatures.filter(f => (f.properties.name || '').toLowerCase().includes(q));
+            showMarkers(filtered);
+        }
+    </script>
+</body>
+</html>
