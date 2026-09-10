@@ -16,59 +16,147 @@
             width: 100%;
             height: 100vh;
         }
-        .header-title {
+        .header-panel {
             position: absolute;
             top: 10px;
             right: 10px;
+            left: 10px;
             z-index: 1000;
             background: white;
-            padding: 10px 20px;
+            padding: 10px 15px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .title {
             font-weight: bold;
-            color: #333;
+            color: #1f4e78;
+            font-size: 15px;
+            text-align: center;
+        }
+        .search-container {
+            display: flex;
+            gap: 8px;
+        }
+        #searchBox {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .btn-action {
+            background-color: #1f4e78;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .btn-action:hover {
+            background-color: #15395b;
         }
     </style>
 </head>
 <body>
 
-    <div class="header-title">شركة شعاع للخدمات العامة - قطاع الإسكندرية</div>
+    <div class="header-panel">
+        <div class="title">شركة شعاع للخدمات العامة - قطاع الإسكندرية</div>
+        <div class="search-container">
+            <input type="text" id="searchBox" placeholder="ابحث برقم البرن أو العنوان...">
+            <button class="btn-action" onclick="locateUser()">موقعي الحالي</button>
+        </div>
+    </div>
+
     <div id="map"></div>
 
     <!-- استدعاء مكتبة Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // 1. إنشاء الخريطة وتحديد المركز على مدينة الإسكندرية ومستوى التكبير
+        // 1. إنشاء الخريطة وتحديد المركز على الإسكندرية
         var map = L.map('map').setView([31.2001, 29.9187], 12);
 
-        // 2. إضافة طبقة الخريطة الأساسية (OpenStreetMap)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // 3. جلب ملف الـ GeoJSON الخارجي الذي يحتوي على المواقع تلقائياً
+        var markersLayer = L.layerGroup().addTo(map);
+        var allFeatures = [];
+
+        // 2. جلب ملف البيانات الخارجي shoaa_data.geojson
         fetch('shoaa_data.geojson')
             .then(response => response.json())
             .then(data => {
-                L.geoJSON(data, {
-                    pointToLayer: function (feature, latlng) {
-                        return L.marker(latlng);
-                    },
-                    onEachFeature: function (feature, layer) {
-                        var popupContent = "<b>رقم البرن:</b> " + (feature.properties.name || "غير محدد");
-                        if (feature.properties.address) {
-                            popupContent += "<br><b>العنوان:</b> " + feature.properties.address;
-                        }
-                        // إضافة رابط توجيه مباشر لتطبيق خرائط جوجل للملاحة الميدانية
-                        popupContent += `<br><br><a href="https://www.google.com/maps/search/?api=1&query=${latlng.lat},${latlng.lng}" target="_blank" style="background:#1f4e78; color:white; padding:5px 10px; text-decoration:none; border-radius:4px; display:inline-block;">🧭 التنقل عبر خرائط جوجل</a>`;
-                        
-                        layer.bindPopup(popupContent);
-                    }
-                }).addTo(map);
+                allFeatures = data.features;
+                displayMarkers(allFeatures);
             })
-            .catch(error => console.error('خطأ في تحميل بيانات الخريطة:', error));
+            .catch(error => console.error('خطأ في تحميل ملف البيانات:', error));
+
+        // 3. دالة عرض النقاط على الخريطة
+        function displayMarkers(features) {
+            markersLayer.clearLayers();
+            features.forEach(feature => {
+                if (feature.geometry && feature.geometry.coordinates) {
+                    var lng = feature.geometry.coordinates[0];
+                    var lat = feature.geometry.coordinates[1];
+                    var name = feature.properties.name || "غير محدد";
+                    var address = feature.properties.address || "عنوان غير متوفر";
+
+                    var popupContent = `
+                        <div style="text-align: right; font-family: 'Cairo', sans-serif;">
+                            <b>رقم البرن:</b> ${name}<br>
+                            <b>العنوان:</b> ${address}<br><br>
+                            <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" 
+                               style="background:#1f4e78; color:white; padding:6px 12px; text-decoration:none; border-radius:5px; display:inline-block; font-weight:bold;">
+                               🧭 فتح في خرائط جوجل للملاحة
+                            </a>
+                        </div>
+                    `;
+
+                    var marker = L.marker([lat, lng]).bindPopup(popupContent);
+                    markersLayer.addLayer(marker);
+                }
+            });
+        }
+
+        // 4. تفعيل البحث الفعلي عند الكتابة
+        document.getElementById('searchBox').addEventListener('input', function(e) {
+            var query = e.target.value.trim().toLowerCase();
+            if (!query) {
+                displayMarkers(allFeatures);
+                return;
+            }
+            var filtered = allFeatures.filter(f => {
+                var name = (f.properties.name || "").toLowerCase();
+                var address = (f.properties.address || "").toLowerCase();
+                return name.includes(query) || address.includes(query);
+            });
+            displayMarkers(filtered);
+        });
+
+        // 5. زر لتحديد موقع المستخدم الحالي ميدانياً
+        function locateUser() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    map.setView([lat, lng], 16);
+                    L.marker([lat, lng]).addTo(map)
+                        .bindPopup("<b>أنت هنا الآن</b>").openPopup();
+                }, () => {
+                    alert("تعذر تحديد موقعك. يجدر التأكد من تفعيل خدمة موقع الهاتف (GPS).");
+                });
+            } else {
+                alert("متصفحك لا يدعم خاصية تحديد الموقع الجغرافي.");
+            }
+        }
     </script>
 </body>
 </html>
